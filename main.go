@@ -1,8 +1,8 @@
 package main
 
 func main() {
-	sdf := NewSdf("")
-	lldb := NewLldb("")
+	sdf := NewSdf("/Users/g3un/Desktop/test")
+	lldb := NewLldb("/usr/bin/lldb")
 
 	if err := sdf.SetDebugger(lldb); err != nil {
 		panic(err)

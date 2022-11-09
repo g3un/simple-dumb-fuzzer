@@ -5,7 +5,7 @@ A simple dumb fuzzer than ever. 🤣
 ## Supported mutate methods
 
 - Insert
-- Remove
+- Delete
 
 ## Supported debuggers
 

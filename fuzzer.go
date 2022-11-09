@@ -8,9 +8,10 @@ type fuzzer interface {
 	pick() error
 	mutate() error
 	execute() error
-	monitor() error
+	monitor(chan bool) error
 	report() error
-	clean() error
+	sendStatsD() error
+	clear() error
 
 	Run()
 }
