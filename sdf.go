@@ -111,7 +111,7 @@ func (s *Sdf) pick() error {
 	fileName := getFileName(sample)
 	caseName := fmt.Sprintf("case-%d-%s", s.iterCount, fileName)
 
-	fout, err := os.Create(s.casePath + caseName)
+	fout, err := os.Create(s.casePath + "/" + caseName)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (s Sdf) mutate() error {
 	// Delete
 	case 1:
 		mutateOffset := randomInt(1, s.finBuf.Size())
-		mutateSize := randomInt(1, 1000)
+		mutateSize := randomInt(0, s.finBuf.Size()-mutateOffset)
 
 		s.foutBuf.Write(buf[:mutateOffset])
 		s.foutBuf.Write(buf[mutateOffset+mutateSize:])
