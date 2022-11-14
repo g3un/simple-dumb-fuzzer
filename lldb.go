@@ -2,6 +2,7 @@ package main
 
 import (
 	"os/exec"
+	"strings"
 )
 
 type Lldb struct {
@@ -18,10 +19,10 @@ func NewLldb(path string) *Lldb {
 	}
 }
 
-func (l *Lldb) Run(cmd string) error {
-	return nil
-}
+func (l *Lldb) Run(cmd string) ([]byte, error) {
+	c := strings.Split(cmd, " ")
 
-func (l Lldb) Terminate() error {
-	return nil
+	l.cmd = exec.Command(l.path, c...)
+
+	return l.cmd.Output()
 }

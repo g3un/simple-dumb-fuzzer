@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"math/rand"
 	"os"
 	"regexp"
@@ -10,6 +11,40 @@ import (
 func getFileName(path string) string {
 	re := regexp.MustCompile(`^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))`)
 	return re.FindStringSubmatch(path)[2]
+}
+
+func copy(src string, dest string) error {
+	fin, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer fin.Close()
+	finBuf := bufio.NewReader(fin)
+
+	fout, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer fout.Close()
+
+	foutBuf := bufio.NewWriter(fout)
+	defer foutBuf.Flush()
+
+	finStat, err := fin.Stat()
+	if err != nil {
+		return err
+	}
+
+	buf := make([]byte, finStat.Size())
+
+	_, err = finBuf.Read(buf)
+	if err != nil {
+		return err
+	}
+
+	foutBuf.Write(buf)
+
+	return nil
 }
 
 // [start, end)

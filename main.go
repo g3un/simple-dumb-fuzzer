@@ -7,10 +7,7 @@ func main() {
 	if err := sdf.SetDebugger(lldb); err != nil {
 		panic(err)
 	}
-	if err := sdf.SetStatsD(""); err != nil {
-		panic(err)
-	}
-	if err := sdf.SetCommand(""); err != nil {
+	if err := sdf.SetStatsD("eff.g3un.com:8125"); err != nil {
 		panic(err)
 	}
 

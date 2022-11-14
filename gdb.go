@@ -18,10 +18,6 @@ func NewGdb(path string) *Gdb {
 	}
 }
 
-func (g *Gdb) Run(cmd string) error {
-	return nil
-}
-
-func (g Gdb) Terminate() error {
-	return nil
+func (g *Gdb) Run(cmd string) ([]byte, error) {
+	return []byte{}, nil
 }

@@ -18,10 +18,6 @@ func NewWindbg(path string) *Windbg {
 	}
 }
 
-func (w *Windbg) Run(cmd string) error {
-	return nil
-}
-
-func (w Windbg) Terminate() error {
-	return nil
+func (w *Windbg) Run(cmd string) ([]byte, error) {
+	return []byte{}, nil
 }

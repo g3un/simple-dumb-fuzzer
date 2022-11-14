@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +18,8 @@ type Sdf struct {
 	casePath  string
 	crashPath string
 
-	sample string
+	sample   string
+	caseName string
 
 	iterCount  int
 	crashCount int
@@ -27,8 +30,7 @@ type Sdf struct {
 	fout    *os.File
 	foutBuf *bufio.Writer
 
-	dbg        *debugger
-	cmd        string
+	dbg        debugger
 	statsDAddr string
 }
 
@@ -69,18 +71,12 @@ func NewSdf(target string) *Sdf {
 		crashCount: 0,
 
 		dbg:        nil,
-		cmd:        "",
 		statsDAddr: "",
 	}
 }
 
 func (s *Sdf) SetDebugger(dbg debugger) error {
-	s.dbg = &dbg
-	return nil
-}
-
-func (s *Sdf) SetCommand(cmd string) error {
-	s.cmd = cmd
+	s.dbg = dbg
 	return nil
 }
 
@@ -107,11 +103,11 @@ func (s *Sdf) pick() error {
 	}
 
 	// TODO
-	// need to check
+	// Need to check on Windows
 	fileName := getFileName(sample)
-	caseName := fmt.Sprintf("case-%d-%s", s.iterCount, fileName)
+	s.caseName = fmt.Sprintf("case-%d-%s", s.iterCount, fileName)
 
-	fout, err := os.Create(s.casePath + "/" + caseName)
+	fout, err := os.Create(s.casePath + "/" + s.caseName)
 	if err != nil {
 		return err
 	}
@@ -157,37 +153,83 @@ func (s Sdf) mutate() error {
 	return nil
 }
 
-func (s Sdf) execute() error {
-	// TODO
-	return nil
-}
+func (s Sdf) execute() (bool, error) {
+	if s.dbg == nil {
+		return false, fmt.Errorf("Please set a debugger before start fuzzing")
+	}
 
-func (s Sdf) monitor(ch chan bool) error {
-	// TODO
-	ch <- false
-	return nil
+	cmd := fmt.Sprintf("%s %s -o run", s.target, s.casePath+"/"+s.caseName)
+	out, err := s.dbg.Run(cmd)
+	if err != nil {
+		return false, err
+	}
+
+	fout, err := os.Create(s.casePath + "/" + s.caseName + ".log")
+	defer fout.Close()
+
+	foutBuf := bufio.NewWriter(fout)
+	defer foutBuf.Flush()
+
+	if _, err := foutBuf.Write(out); err != nil {
+		return false, err
+	}
+
+	return !bytes.Contains(out, []byte("status = 0 (0x00000000)")), nil
 }
 
 func (s Sdf) report() error {
-	// TODO
+	if err := copy(s.casePath+"/"+s.caseName, s.crashPath+"/"+s.caseName); err != nil {
+		return err
+	}
+	if err := copy(s.casePath+"/"+s.caseName+".log", s.crashPath+"/"+s.caseName+".log"); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s Sdf) clear() error {
-	// TODO
+	if err := os.RemoveAll(s.casePath); err != nil {
+		return err
+	}
+
+	if err := mkdir(s.casePath); err != nil {
+		return err
+	}
+
 	return nil
 }
 
+func (s Sdf) getStatsDData() string {
+	tag := fmt.Sprintf("|#banner:%s,sdf_version:%s", s.target, "0.0.1")
+
+	return strings.Join([]string{
+		fmt.Sprintf("fuzzing.iter_count:%d|g%s", s.iterCount, tag),
+		fmt.Sprintf("fuzzing.carsh_count:%d|g%s", s.crashCount, tag),
+	}, "\n")
+}
+
 func (s Sdf) sendStatsD() error {
-	// TODO
+	data := s.getStatsDData()
+
+	raddr, err := net.ResolveUDPAddr("udp", s.statsDAddr)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.DialUDP("udp", nil, raddr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	conn.Write([]byte(data))
+
 	return nil
 }
 
 func (s Sdf) Run() {
 	for {
-		ch := make(chan bool, 1)
-		defer close(ch)
-
 		if err := s.pick(); err != nil {
 			panic(err)
 		}
@@ -195,13 +237,17 @@ func (s Sdf) Run() {
 			panic(err)
 		}
 
-		go s.execute()
-		go s.monitor(ch)
+		isCrash, err := s.execute()
+		if err != nil {
+			panic(err)
+		}
 
 		s.iterCount += 1
 
-		if <-ch {
-			s.report()
+		if isCrash {
+			if err := s.report(); err != nil {
+				panic(err)
+			}
 			s.crashCount += 1
 		}
 
@@ -212,7 +258,9 @@ func (s Sdf) Run() {
 		}
 
 		if (s.iterCount % 10000) == 0 {
-			s.clear()
+			if err := s.clear(); err != nil {
+				panic(err)
+			}
 		}
 	}
 }
