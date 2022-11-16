@@ -2,6 +2,7 @@ package main
 
 import (
 	"os/exec"
+	"strings"
 )
 
 type Gdb struct {
@@ -19,5 +20,9 @@ func NewGdb(path string) *Gdb {
 }
 
 func (g *Gdb) Run(cmd string) ([]byte, error) {
-	return []byte{}, nil
+	c := strings.Split(cmd, " ")
+
+	g.cmd = exec.Command(g.path, c...)
+
+	return g.cmd.Output()
 }
