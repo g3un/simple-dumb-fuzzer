@@ -2,6 +2,7 @@ package main
 
 import (
 	"os/exec"
+	"strings"
 )
 
 type Windbg struct {
@@ -19,5 +20,9 @@ func NewWindbg(path string) *Windbg {
 }
 
 func (w *Windbg) Run(cmd string) ([]byte, error) {
-	return []byte{}, nil
+	c := strings.Split(cmd, " ")
+
+	w.cmd = exec.Command(w.path, c...)
+
+	return w.cmd.Output()
 }
