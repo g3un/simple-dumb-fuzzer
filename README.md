@@ -2,6 +2,12 @@
 
 A simple dumb fuzzer than ever. 🤣
 
+## Useage
+
+```shell
+$ STATSD_SERVER="eff.g3un.com:8125" gor . ../test $(which lldb)
+```
+
 ## Supported mutate methods
 
 - Insert

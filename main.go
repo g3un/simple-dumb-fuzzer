@@ -1,14 +1,21 @@
 package main
 
+import (
+	"os"
+)
+
 func main() {
-	sdf := NewSdf("/Users/g3un/Desktop/test")
-	lldb := NewLldb("/usr/bin/lldb")
+	sdf := NewSdf(os.Args[1])
+	lldb := NewLldb(os.Args[2])
 
 	if err := sdf.SetDebugger(lldb); err != nil {
 		panic(err)
 	}
-	if err := sdf.SetStatsD("eff.g3un.com:8125"); err != nil {
-		panic(err)
+	statsdServer := os.Getenv("STATSD_SERVER")
+	if statsdServer != "" {
+		if err := sdf.SetStatsD(statsdServer); err != nil {
+			panic(err)
+		}
 	}
 
 	sdf.Run()
